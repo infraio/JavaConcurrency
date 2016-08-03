@@ -3,6 +3,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,90 +61,6 @@ public class TestBoundedBuffer {
   @Test
   public void testPutTake() {
     new PutTakeTest(100, 100000, 16).run();
-  }
-
-}
-
-class PutTakeTest {
-  
-  ExecutorService pool = Executors.newCachedThreadPool();
-  AtomicInteger putSum = new AtomicInteger(0);
-  AtomicInteger takeSum = new AtomicInteger(0);
-  
-  BoundedBuffer<Integer> bb;
-  int nTrails;
-  int nPairs;
-  CyclicBarrier startBarrier;
-  CyclicBarrier endBarrier;
-  
-  PutTakeTest(int capacity, int nTrails, int nPairs) {
-    bb = new BoundedBuffer<Integer>(capacity);
-    this.nTrails = nTrails;
-    this.nPairs = nPairs;
-    startBarrier = new CyclicBarrier(2 * nPairs + 1);
-    endBarrier = new CyclicBarrier(2 * nPairs + 1);
-  }
-
-  void run() {
-    try {
-      for (int i = 0; i < nPairs; i++) {
-        pool.submit(new Producer());
-        pool.submit(new Consumer());
-      }
-      
-      // wait all thread to start
-      startBarrier.await();
-      // wait all thread to end
-      endBarrier.await();
-      assertEquals(putSum.get(), takeSum.get());
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  static int xorShift(int y) {
-    y ^= (y << 6);
-    y ^= (y >>> 21);
-    y ^= (y << 7);
-    return y;
-  }
-
-  class Producer implements Runnable {
-    @Override
-    public void run() {
-      try {
-        int seed = this.hashCode() ^ (int) System.nanoTime();
-        int sum = 0;
-
-        startBarrier.await();
-        for (int i = nTrails; i > 0; i--) {
-          bb.put(seed);
-          sum += seed;
-          seed = xorShift(seed);
-        }
-        putSum.getAndAdd(sum);
-        endBarrier.await();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  class Consumer implements Runnable {
-    @Override
-    public void run() {
-      try {
-        startBarrier.await();
-        int sum = 0;
-        for (int i = nTrails; i > 0; i--) {
-          sum += bb.take();
-        }
-        takeSum.getAndAdd(sum);
-        endBarrier.await();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 
 }
