@@ -1,9 +1,11 @@
 package nonblocking;
 
+import java.util.Random;
+
 /**
  * Implement caclulateNext() by Random.java in jdk 1.8_65. 
  */
-public abstract class PseudoRandom {
+public abstract class PseudoRandom extends Random {
 
   private static final long multiplier = 0x5DEECE66DL;
   private static final long addend = 0xBL;
@@ -35,6 +37,4 @@ public abstract class PseudoRandom {
     long nextseed = (oldseed * multiplier + addend) & mask;
     return (int) (nextseed >>> (48 - bits));
   }
-  
-  protected abstract int nextInt(int n);
 }
